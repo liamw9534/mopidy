@@ -5,8 +5,9 @@ import itertools
 
 import pykka
 
-from mopidy import audio, backend
+from mopidy import audio, backend, device
 from mopidy.audio import PlaybackState
+from mopidy.core.device import DeviceController
 from mopidy.core.library import LibraryController
 from mopidy.core.listener import CoreListener
 from mopidy.core.playback import PlaybackController
@@ -15,7 +16,8 @@ from mopidy.core.tracklist import TracklistController
 from mopidy.utils import versioning
 
 
-class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener):
+class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
+           device.DeviceListener):
     library = None
     """The library controller. An instance of
     :class:`mopidy.core.LibraryController`."""
@@ -32,10 +34,14 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener):
     """The tracklist controller. An instance of
     :class:`mopidy.core.TracklistController`."""
 
-    def __init__(self, audio=None, backends=None):
+    def __init__(self, audio=None, backends=None, device_managers=None):
         super(Core, self).__init__()
 
         self.backends = Backends(backends)
+
+        self.device_managers = Devices(device_managers)
+
+        self.device = DeviceController(device_managers=self.device_managers, core=self)
 
         self.library = LibraryController(backends=self.backends, core=self)
 
@@ -46,6 +52,7 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener):
             backends=self.backends, core=self)
 
         self.tracklist = TracklistController(core=self)
+        
 
     def get_uri_schemes(self):
         futures = [b.uri_schemes for b in self.backends]
@@ -81,6 +88,45 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener):
         # Forward event from backend to frontends
         CoreListener.send('playlists_loaded')
 
+    def device_found(self, device):
+        # Forward event from device to other extensions
+        CoreListener.send('device_found', device=device)
+
+    def device_disappeared(self, device):
+        # Forward event from device to other extensions
+        CoreListener.send('device_disappeared', device=device)
+
+    def device_connected(self, device):
+        # Forward event from device to other extensions
+        CoreListener.send('device_connected', device=device)
+
+    def device_disconnected(self, device):
+        # Forward event from device to other extensions
+        CoreListener.send('device_disconnected', device=device)
+
+    def device_created(self, device):
+        # Forward event from device to other extensions
+        CoreListener.send('device_created', device=device)
+
+    def device_removed(self, device):
+        # Forward event from device to other extensions
+        CoreListener.send('device_removed', device=device)
+
+    def device_property_changed(self, device, property_dict):
+        # Forward event from device to other extensions
+        CoreListener.send('device_property_changed', device=device,
+                          property_dict=property_dict)
+
+    def device_pin_code_requested(self, device, pin_code):
+        # Forward event from device to other extensions
+        CoreListener.send('device_pin_code_requested', device=device,
+                          pin_code=pin_code)
+
+    def device_pass_key_confirmation(self, device, pass_key):
+        # Forward event from device to other extensions
+        CoreListener.send('device_pass_key_confirmation', device=device,
+                          pass_key=pass_key)
+
 
 class Backends(list):
     def __init__(self, backends):
@@ -115,3 +161,19 @@ class Backends(list):
                     self.with_playback[scheme] = b
                 if has_playlists:
                     self.with_playlists[scheme] = b
+
+
+class Devices(list):
+    def __init__(self, device_managers):
+        super(Devices, self).__init__(device_managers)
+
+        self.devices_by_type = {}
+        name = lambda b: b.actor_ref.actor_class.__name__
+
+        for d in device_managers:
+            for device_type in d.device_types.get():
+                assert device_type not in self.devices_by_type, (
+                    'Cannot add device type %s for %s, '
+                    'it is already handled by %s'
+                ) % (device_type, name(d), name(self.devices_by_type[device_type]))
+                self.devices_by_type[device_type] = d

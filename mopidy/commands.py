@@ -263,11 +263,13 @@ class RootCommand(Command):
 
         backend_classes = args.registry['backend']
         frontend_classes = args.registry['frontend']
+        device_manager_classes = args.registry['device_manager']
 
         try:
             audio = self.start_audio(config)
             backends = self.start_backends(config, backend_classes, audio)
-            core = self.start_core(audio, backends)
+            device_managers = self.start_device_managers(config, device_manager_classes)
+            core = self.start_core(audio, backends, device_managers)
             self.start_frontends(config, frontend_classes, core)
             loop.run()
         except KeyboardInterrupt:
@@ -277,6 +279,7 @@ class RootCommand(Command):
             loop.quit()
             self.stop_frontends(frontend_classes)
             self.stop_core()
+            self.stop_device_managers(device_manager_classes)
             self.stop_backends(backend_classes)
             self.stop_audio()
             process.stop_remaining_actors()
@@ -297,9 +300,22 @@ class RootCommand(Command):
 
         return backends
 
-    def start_core(self, audio, backends):
+    def start_device_managers(self, config, device_manager_classes):
+        logger.info(
+            'Starting Mopidy device managers: %s',
+            ', '.join(b.__name__ for b in device_manager_classes) or 'none')
+
+        device_managers = []
+        for device_manager_class in device_manager_classes:
+            device_manager = device_manager_class.start(config=config).proxy()
+            device_managers.append(device_manager)
+
+        return device_managers
+        
+    def start_core(self, audio, backends, device_managers):
         logger.info('Starting Mopidy core')
-        return Core.start(audio=audio, backends=backends).proxy()
+        return Core.start(audio=audio, backends=backends,
+                          device_managers=device_managers).proxy()
 
     def start_frontends(self, config, frontend_classes, core):
         logger.info(
@@ -317,6 +333,11 @@ class RootCommand(Command):
     def stop_core(self):
         logger.info('Stopping Mopidy core')
         process.stop_actors_by_class(Core)
+
+    def stop_device_managers(self, device_manager_classes):
+        logger.info('Stopping Mopidy device managers')
+        for device_manager_class in device_manager_classes:
+            process.stop_actors_by_class(device_manager_class)
 
     def stop_backends(self, backend_classes):
         logger.info('Stopping Mopidy backends')
