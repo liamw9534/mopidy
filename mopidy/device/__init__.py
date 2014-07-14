@@ -13,107 +13,140 @@ class DeviceManager(object):
     def get_devices(self):
         """
         List of all available devices.  This will normally only be
-        populated following a "scan", although some technologies
-        may keep their attached devices persistent in a system-wide
-        registry e.g., bluetooth - mandatory
+        populated following a device discovery procedure, although some
+        technologies may keep their attached devices persistent in a system-wide
+        registry.
+
+        :return: a list of `:class:mopidy.models.Device` objects
+        :rtype: list
         """
         pass
 
     def enable(self):
         """
         Enable the device manager.  Starts enabled by default, so should
-        be called following a disable - mandatory
+        be called following a disable.  Events may be emitted following
+        an enable.
         """
         pass
 
     def disable(self):
         """
-        Disable the device manager - mandatory
+        Disable the device manager.  No events should be emitted following
+        a disable.
         """
         pass
 
     def connect(self, device):
         """
-        Connect a device - mandatory
+        Connect a device.  The interpretation of 'connect' is implementation
+        specific.  For example, in bluetooth this may mean connecting the
+        device profiles that are compatible with mopidy.  It is intended that
+        the 'connected' property is used by other mopidy extension to
+        determine whether a device should be used e.g., for audio output.
+
+        :param device: the device to connect.
+        :type device: immutable object describing the device uniquely
         """
         pass
 
     def disconnect(self, device):
         """
-        Disconnect a device - mandatory
+        Disconnect a device.  See also `:meth:connect`.
+
+        :param device: the device to disconnect.
+        :type device: immutable object describing the device uniquely
         """
         pass
 
     def pair(self, device):
         """
-        Pair a device - optional
+        Pair a device.  The concept of pairing is required by some device
+        technologies as a means to authenticate/permit access to wireless
+        devices which may otherwise be attached unintentionally.
+        This method should normally be called only after a discovery event
+        has been emitted (i.e., device_found) and the device is not yet
+        created i.e., `:meth:get_devices()` does not include this device.
+        Following a successful pairing, the device_created event should
+        be emitted.
+
+        :param device: the device to pair.
+        :type device: immutable object describing the device uniquely
         """
         pass
 
     def remove(self, device):
         """
-        Remove a paired device - optional
+        Remove a paired device.  The device should be considered no
+        longer paired and removed from any system-wide registry.
+
+        :param device: the device to remove.
+        :type device: immutable object describing the device uniquely
         """
         pass
 
     def is_connected(self, device):
         """
-        Ascertain if a device is connected - mandatory
+        Ascertain if a device is presently connected.
+
+        :param device: the device to check
+        :type device: immutable object describing the device uniquely
         """
         pass
 
     def is_paired(self, device):
         """
-        Ascertain if a device is paired - optional
+        Ascertain if a device is paired.
+
+        :param device: the device to check
+        :type device: immutable object describing the device uniquely
         """
         pass
 
     def set_property(self, device, name, value):
         """
-        Set a device's property - optional
+        Set a device's property.  For device's that have
+        implementation-specific configuration settings, these may be exposed
+        for setting through this method.
+
+        :param device: the device whose property to set
+        :type device: immutable object describing the device uniquely
+        :param name: the property name to set
+        :type name: string
+        :param value: the value of the property to set
+        :type value: implementation-specific to device
         """
         pass
 
     def get_property(self, device, name=None):
         """
-        Get a device's property - optional
+        Get a device's property.  For device's that have
+        implementation-specific configuration settings, these may be exposed
+        for setting through this method.
+
+        :param device: the device whose property to get
+        :type device: immutable object describing the device uniquely
+        :param name: the property name to get, or None to get all properties
+        :type name: string
+        :return property value or all property values where name is None
+        :rtype: dictionary of all properties or implementation-specific property value
         """
         pass
 
     def has_property(self, device, name):
         """
-        Check if a device has a particular property name - optional
+        Check if a device has a particular property name.  For device's that have
+        implementation-specific configuration settings, these may be exposed
+        for setting through this method.
+
+        :param device: the device whose property to check
+        :type device: immutable object describing the device uniquely
+        :param name: the property name to check
+        :type name: string
+        :return True if the property exists, False otherwise
+        :rtype: boolean
         """
         pass
-
-
-class Device(object):
-    """
-    The Device class defines the following mandatory properties that any
-    device must possess and allows a device to be uniquely identified
-    by the device manager.  Additional properties may be defined that
-    are implementation-specific through sub-classing of this class.
-    """
-
-    #: String representing the device type identifier.  This *MUST*
-    #: always be set to allow the associated device manager to be
-    #: inferred at all times.
-    device_type = None
-
-    #: The name *SHOULD* be set to a human-readable device name.
-    #: It is not required that the name is unique and name may
-    #: be omitted if it is not known.
-    name = None
-
-    #: The address *SHALL* be set to an underlying technology physical
-    #: address.  The physical address *SHALL* be unique.
-    address = None
-
-    #: The capabilities of the device is a list of DeviceCapability
-    #: objects which represents specific interactions the device could support
-    #: and device properties
-    #: See also :class:`mopidy.device.DeviceCapability`
-    capabilities = None
 
 
 class DeviceListener(listener.Listener):
@@ -136,77 +169,113 @@ class DeviceListener(listener.Listener):
 
     def device_found(self, device):
         """
-        Called when a device is found.  If the device supports pairing
-        and it is not already paired, it may be paired at this point.
+        Called whenever a new device has been discovered by a device manager.
 
-        *MAY* be implemented by actor.
+        *MUST* be implemented by actor.
+
+        :param device: the device that has been discovered
+        :type device: immutable object describing the device's properties
         """
         pass
 
     def device_disappeared(self, device):
         """
-        Called when a device disappears.  Pairing no longer possible.
+        Called whenever a device is no longer discoverable by a device manager.
 
         *MAY* be implemented by actor.
+
+        :param device: the device that is no longer discoverable
+        :type device: immutable object describing the device's properties
         """
         pass
 
     def device_connected(self, device):
         """
-        Called when a device is connected.
+        Called whenever a device has been connected to mopidy.
 
         *MUST* be implemented by actor.
+
+        :param device: the device that has been connected
+        :type device: immutable object describing the device's properties
         """
         pass
 
     def device_disconnected(self, device):
         """
-        Called when a device is disconnected.
+        Called whenever a device has been disconnected from mopidy.
 
         *MUST* be implemented by actor.
+
+        :param device: the device that has been disconnected
+        :type device: immutable object describing the device's properties
         """
         pass
 
     def device_created(self, device):
         """
-        Called when a device is created i.e., following pairing.
+        Called whenever a new device has been created for the first time.
 
-        *MUST* be implemented by actor.
+        *MAY* be implemented by actor.
+
+        :param device: the device that has been created.
+        :type device: immutable object describing the device's properties
         """
         pass
 
     def device_removed(self, device):
         """
-        Called when a device is removed i.e., pairing association
-        is removed.
+        Called whenever a device has been removed.
 
         *MAY* be implemented by actor.
+
+        :param device: the device that has been removed.
+        :type device: immutable object describing the device's properties
         """
         pass
 
     def device_property_changed(self, device, property_dict):
         """
-        Called when a device property changes.
+        Called whenever a device's property changes.
 
         *MAY* be implemented by actor.
+
+        :param device: the device whose properties have changed
+        :type property_dict: properties and values that have changed
+        :type device: immutable object describing the device's properties
+        :type property_dict: dictionary
         """
         pass
 
     def device_pin_code_requested(self, device, pin_code):
         """
-        Called when a device pin code is requested during
-        pairing.
+        Pairing event for devices that are required to input a
+        pin code for authentication purposes.  The pin code value will
+        be notified to the end user for entry into the device to
+        complete the pairing process.
 
         *MAY* be implemented by actor.
+
+        :param device: the device whose properties have changed
+        :type device: immutable object describing the device's properties
+        :param pin_code: a sequence of digits describing a PIN
+        :type pin_code: string
         """
         pass
 
     def device_pass_key_confirmation(self, device, pass_key):
         """
-        Called when a device pass key requires confirmation
-        during pairing.
+        Pairing event for devices that required a self-generated
+        pass key to be confirmed by the end user for authentication
+        purposes.  The pass key value will notified to the end user
+        for comparison against the pass key displayed by the device
+        to complete the pairing process.
 
         *MAY* be implemented by actor.
+
+        :param device: the device whose properties have changed
+        :type device: immutable object describing the device's properties
+        :param pass_key: a 32-bit number that defines the pass key
+        :type pass_key: integer
         """
         pass
 

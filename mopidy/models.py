@@ -479,3 +479,33 @@ class SearchResult(ImmutableObject):
         self.__dict__['artists'] = tuple(kwargs.pop('artists', None) or [])
         self.__dict__['albums'] = tuple(kwargs.pop('albums', None) or [])
         super(SearchResult, self).__init__(*args, **kwargs)
+
+
+class Device(ImmutableObject):
+    """
+    The Device class defines the following mandatory attributes that a
+    device must possess and allows a device to be uniquely identified
+    by the device manager.  Additional properties may be defined and
+    obtained through get_properties() and set_properties() methods
+    of the `:class:mopidy.device.DeviceManager`
+    """
+
+    #: String representing the device type identifier.  This *MUST*
+    #: always be set to allow the associated device manager to be
+    #: inferred at all times.
+    device_type = None
+
+    #: The name *SHOULD* be set to a human-readable device name.
+    #: It is not required that the name is unique and name may
+    #: be omitted if it is not known.
+    name = None
+
+    #: The address *MUST* be set to an underlying technology physical
+    #: address.  The physical address *SHALL* be unique.
+    address = None
+
+    #: The capabilities of the device is a list of strings
+    #: which represents specific interactions with mopidy the device
+    #: may support
+    #: See also :class:`mopidy.device.DeviceCapability`
+    capabilities = None

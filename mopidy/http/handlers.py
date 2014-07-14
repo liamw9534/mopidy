@@ -44,6 +44,7 @@ def make_jsonrpc_wrapper(core_actor):
             'core.playback': core.PlaybackController,
             'core.playlists': core.PlaylistsController,
             'core.tracklist': core.TracklistController,
+            'core.device': core.DeviceController,
         })
     return jsonrpc.JsonRpcWrapper(
         objects={
@@ -54,6 +55,7 @@ def make_jsonrpc_wrapper(core_actor):
             'core.playback': core_actor.playback,
             'core.playlists': core_actor.playlists,
             'core.tracklist': core_actor.tracklist,
+            'core.device': core_actor.device,
         },
         decoders=[models.model_json_decoder],
         encoders=[models.ModelJSONEncoder]

@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import collections
 import itertools
 
+import logging
+
 import pykka
 
 from mopidy import audio, backend, device
@@ -14,6 +16,8 @@ from mopidy.core.playback import PlaybackController
 from mopidy.core.playlists import PlaylistsController
 from mopidy.core.tracklist import TracklistController
 from mopidy.utils import versioning
+
+logger = logging.getLogger(__name__)
 
 
 class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
@@ -33,6 +37,10 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
     tracklist = None
     """The tracklist controller. An instance of
     :class:`mopidy.core.TracklistController`."""
+
+    device = None
+    """The device controller. An instance of
+    :class:`mopidy.core.DeviceController`."""
 
     def __init__(self, audio=None, backends=None, device_managers=None):
         super(Core, self).__init__()
@@ -90,18 +98,22 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
 
     def device_found(self, device):
         # Forward event from device to other extensions
+        logger.info('Core relaying device_found')
         CoreListener.send('device_found', device=device)
 
     def device_disappeared(self, device):
         # Forward event from device to other extensions
+        logger.info('Core relaying device_disappeared')
         CoreListener.send('device_disappeared', device=device)
 
     def device_connected(self, device):
         # Forward event from device to other extensions
+        logger.info('Core relaying device_connected')
         CoreListener.send('device_connected', device=device)
 
     def device_disconnected(self, device):
         # Forward event from device to other extensions
+        logger.info('Core relaying device_disconnected')
         CoreListener.send('device_disconnected', device=device)
 
     def device_created(self, device):
@@ -114,6 +126,7 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
 
     def device_property_changed(self, device, property_dict):
         # Forward event from device to other extensions
+        logger.info('Core relaying device_property_changed')
         CoreListener.send('device_property_changed', device=device,
                           property_dict=property_dict)
 

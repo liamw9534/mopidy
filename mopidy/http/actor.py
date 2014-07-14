@@ -55,6 +55,7 @@ class HttpFrontend(pykka.ThreadingActor, CoreListener):
         logger.debug('Stopped HTTP server')
 
     def on_event(self, name, **data):
+        logger.info('HTTP frontend event name=%s data=%s', name, data)
         event = data
         event['event'] = name
         message = json.dumps(event, cls=models.ModelJSONEncoder)

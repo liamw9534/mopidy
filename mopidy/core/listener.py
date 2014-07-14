@@ -163,3 +163,115 @@ class CoreListener(listener.Listener):
         :type time_position: int
         """
         pass
+
+    def device_found(self, device):
+        """
+        Called whenever a new device has been discovered by a device manager.
+
+        *MUST* be implemented by actor.
+
+        :param device: the device that has been discovered
+        :type device: immutable object describing the device's properties
+        """
+        pass
+
+    def device_disappeared(self, device):
+        """
+        Called whenever a device is no longer discoverable by a device manager.
+
+        *MAY* be implemented by actor.
+
+        :param device: the device that is no longer discoverable
+        :type device: immutable object describing the device's properties
+        """
+        pass
+
+    def device_connected(self, device):
+        """
+        Called whenever a device has been connected to mopidy.
+
+        *MUST* be implemented by actor.
+
+        :param device: the device that has been connected
+        :type device: immutable object describing the device's properties
+        """
+        pass
+
+    def device_disconnected(self, device):
+        """
+        Called whenever a device has been disconnected from mopidy.
+
+        *MUST* be implemented by actor.
+
+        :param device: the device that has been disconnected
+        :type device: immutable object describing the device's properties
+        """
+        pass
+
+    def device_created(self, device):
+        """
+        Called whenever a new device has been created for the first time.
+
+        *MAY* be implemented by actor.
+
+        :param device: the device that has been created.
+        :type device: immutable object describing the device's properties
+        """
+        pass
+
+    def device_removed(self, device):
+        """
+        Called whenever a device has been removed.
+
+        *MAY* be implemented by actor.
+
+        :param device: the device that has been removed.
+        :type device: immutable object describing the device's properties
+        """
+        pass
+
+    def device_property_changed(self, device, property_dict):
+        """
+        Called whenever a device's property changes.
+
+        *MAY* be implemented by actor.
+
+        :param device: the device whose properties have changed
+        :type property_dict: properties and values that have changed
+        :type device: immutable object describing the device's properties
+        :type property_dict: dictionary
+        """
+        pass
+
+    def device_pin_code_requested(self, device, pin_code):
+        """
+        Pairing event for devices that are required to input a
+        pin code for authentication purposes.  The pin code value will
+        be notified to the end user for entry into the device to
+        complete the pairing process.
+
+        *MAY* be implemented by actor.
+
+        :param device: the device whose properties have changed
+        :type device: immutable object describing the device's properties
+        :param pin_code: a sequence of digits describing a PIN
+        :type pin_code: string
+        """
+        pass
+
+    def device_pass_key_confirmation(self, device, pass_key):
+        """
+        Pairing event for devices that required a self-generated
+        pass key to be confirmed by the end user for authentication
+        purposes.  The pass key value will notified to the end user
+        for comparison against the pass key displayed by the device
+        to complete the pairing process.
+
+        *MAY* be implemented by actor.
+
+        :param device: the device whose properties have changed
+        :type device: immutable object describing the device's properties
+        :param pass_key: a 32-bit number that defines the pass key
+        :type pass_key: integer
+        """
+        pass

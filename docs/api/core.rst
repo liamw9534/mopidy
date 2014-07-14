@@ -9,7 +9,7 @@ Core API
 
 The core API is the interface that is used by frontends like
 :mod:`mopidy.http` and :mod:`mopidy.mpd`. The core layer is inbetween the
-frontends and the backends.
+frontends, backends and device managers.
 
 .. autoclass:: mopidy.core.Core
     :members:
@@ -52,6 +52,14 @@ Library controller
 Manages the music library, e.g. searching for tracks to be added to a playlist.
 
 .. autoclass:: mopidy.core.LibraryController
+    :members:
+
+Device controller
+=================
+
+Manages devices that may be dynamically connected to mopidy e.g., bluetooth devices.
+
+.. autoclass:: mopidy.core.DeviceController
     :members:
 
 

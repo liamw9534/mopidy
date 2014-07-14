@@ -19,6 +19,7 @@ API reference
     concepts
     models
     backends
+    devicemgrs
     core
     audio
     frontends

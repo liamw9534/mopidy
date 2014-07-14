@@ -31,10 +31,10 @@ class DeviceController(object):
             device_manager.disable()
 
     def is_connected(self, device):
-        self._device_manager(device).is_connect(device).get()
+        return self._device_manager(device).is_connected(device).get()
 
     def is_paired(self, device):
-        self._device_manager(device).is_paired(device).get()
+        return self._device_manager(device).is_paired(device).get()
 
     def connect(self, device):
         self._device_manager(device).connect(device)
@@ -52,7 +52,7 @@ class DeviceController(object):
         self._device_manager(device).set_property(device, name, value)
 
     def get_property(self, device, name=None):
-        self._device_manager(device).get_property(device, name).get()
+        return self._device_manager(device).get_property(device, name).get()
 
     def has_property(self, device, name):
-        self._device_manager(device).has_property(device, name).get()
+        return self._device_manager(device).has_property(device, name).get()
