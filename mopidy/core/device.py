@@ -17,8 +17,10 @@ class DeviceController(object):
             if (device_manager):
                 return device_manager.get_devices().get()
         else:
-            return [device_manager.get_devices().get()
-                    for device_manager in self.device_managers.devices_by_type.values()]
+            devices = []
+            for device_manager in self.device_managers.devices_by_type.values():
+                devices.extend(device_manager.get_devices().get())
+            return devices
 
     def enable(self, device_type):
         device_manager = self.device_managers.devices_by_type.get(device_type)

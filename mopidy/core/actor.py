@@ -7,7 +7,8 @@ import logging
 
 import pykka
 
-from mopidy import audio, backend, device
+from mopidy import audio, backend
+from mopidy.device import DeviceListener
 from mopidy.audio import PlaybackState
 from mopidy.core.device import DeviceController
 from mopidy.core.library import LibraryController
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
-           device.DeviceListener):
+           DeviceListener):
     library = None
     """The library controller. An instance of
     :class:`mopidy.core.LibraryController`."""
@@ -60,7 +61,6 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
             backends=self.backends, core=self)
 
         self.tracklist = TracklistController(core=self)
-        
 
     def get_uri_schemes(self):
         futures = [b.uri_schemes for b in self.backends]
