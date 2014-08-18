@@ -13,6 +13,7 @@ import pykka
 from mopidy.audio import playlists, utils
 from mopidy.audio.constants import PlaybackState
 from mopidy.audio.listener import AudioListener
+from mopidy.audio.output import AudioOutput
 from mopidy.utils import process
 
 
@@ -188,8 +189,11 @@ class Audio(pykka.ThreadingActor):
     def _setup_output(self):
         output_desc = self._config['audio']['output']
         try:
-            output = gst.parse_bin_from_description(
-                output_desc, ghost_unconnected_pads=True)
+            if (output_desc):
+                output = gst.parse_bin_from_description(
+                            output_desc, ghost_unconnected_pads=True)
+            else:
+                output = AudioOutput()
             self._playbin.set_property('audio-sink', output)
             logger.info('Audio output set to "%s"', output_desc)
         except gobject.GError as ex:
@@ -548,3 +552,39 @@ class Audio(pykka.ThreadingActor):
 
         event = gst.event_new_tag(taglist)
         self._playbin.send_event(event)
+
+    def add_sink(self, ident, sink_obj):
+        """
+        Add a new audio sink to the dynamic audio output
+
+        :param ident: Unique identifier which will be used as an opaque
+            reference to the sink_obj
+        :type ident: opaque any type which may be referenced in a
+            python dictionary
+        :param sink_obj: a gstreamer object which implements the audio sink
+        :type gst.Bin or derivative of gst.BaseSink
+        """
+        output_desc = self._config['audio'].get('output')
+        if (output_desc):
+            logger.error('User has not configured dynamic audio output')
+        else:
+            logger.info('Adding audio sink sink_obj=%s', sink_obj)
+            output = self._playbin.get_property('audio-sink')
+            output.add_sink(ident, sink_obj)
+
+    def remove_sink(self, ident):
+        """
+        Remove an existing audio sink from the dynamic audio output
+
+        :param ident: Unique identifier used as an opaque
+            reference to a sink_obj
+        :type ident: opaque any type which may be referenced in a
+            python dictionary
+        """
+        output_desc = self._config['audio'].get('output')
+        if (output_desc):
+            logger.error('User has not configured dynamic audio output')
+        else:
+            logger.info('Removing audio sink ident=%s', ident)
+            output = self._playbin.get_property('audio-sink')
+            output.remove_sink(ident)
