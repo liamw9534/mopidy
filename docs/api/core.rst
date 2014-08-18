@@ -55,6 +55,16 @@ Manages the music library, e.g. searching for tracks to be added to a playlist.
     :members:
 
 
+Service controller
+==================
+
+Provides a management API for any extensions that have registered as a service e.g., allows
+extension properties to be set dynamically.
+
+.. autoclass:: mopidy.core.ServiceController
+    :members:
+
+
 Core listener
 =============
 

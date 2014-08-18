@@ -46,7 +46,7 @@ def make_jsonrpc_wrapper(core_actor):
              'core.tracklist': core.TracklistController,
              'core.service': core.ServiceController,
              }
-    services = core_actor.get_service_classes().get()
+    services = core_actor.get_public_service_classes().get()
     for t in services.keys():
         objects[t] = services[t]
 
@@ -61,7 +61,7 @@ def make_jsonrpc_wrapper(core_actor):
              'core.tracklist': core_actor.tracklist,
              'core.service': core_actor.service,
              }
-    services = core_actor.get_services().get()
+    services = core_actor.get_public_services().get()
     for t in services.keys():
         objects[t] = services[t]
     return jsonrpc.JsonRpcWrapper(

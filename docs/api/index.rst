@@ -23,6 +23,7 @@ API reference
     audio
     mixer
     frontends
+    services
     commands
     ext
     config

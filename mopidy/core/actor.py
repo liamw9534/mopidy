@@ -2,10 +2,11 @@ from __future__ import unicode_literals
 
 import collections
 import itertools
+import logging
 
 import pykka
 
-from mopidy import audio, backend, mixer
+from mopidy import audio, backend, mixer, service
 from mopidy.audio import PlaybackState
 from mopidy.core.service import ServiceController
 from mopidy.core.library import LibraryController
@@ -14,6 +15,10 @@ from mopidy.core.playback import PlaybackController
 from mopidy.core.playlists import PlaylistsController
 from mopidy.core.tracklist import TracklistController
 from mopidy.utils import versioning
+
+logger = logging.getLogger(__name__)
+
+actor_name = lambda a: a.actor_ref.actor_class.__name__
 
 
 class Core(
@@ -40,11 +45,24 @@ class Core(
     """The service controller. An instance of
     :class:`mopidy.core.ServiceController`."""
 
-    def __init__(self, mixer=None, backends=None, services=None, service_classes=None):
+    def __init__(self, mixer=None, backends=None, backend_classes=[]):
 
         super(Core, self).__init__()
 
+        self.audio = audio
         self.backends = Backends(backends)
+
+        # A backend may also be a service, so we check if the backend
+        # inherits the service class and append it to the service
+        # class list if it does
+        services = []
+        service_classes = []
+        idx = 0
+        for b in backends:
+            if (idx < len(backend_classes) and issubclass(backend_classes[idx], service.Service)):
+                services.append(b)
+                service_classes.append(backend_classes[idx])
+            idx += 1
 
         self.services = Services(services, service_classes)
 
@@ -105,11 +123,23 @@ class Core(
         # Forward event from mixer to frontends
         CoreListener.send('mute_changed', mute=mute)
 
-    def get_services(self):
-        return self.services.services_by_name
+    def notify_startup_complete(self):
+        """Notifier to inform listeners that start-up is now complete - it should
+        only be called once as part of the start-up code"""
+        CoreListener.send('startup_complete')
 
-    def get_service_classes(self):
-        return self.services.classes_by_name
+    def register_service(self, service_obj, service_class):
+        """Register a new service after core has started e.g., a frontend"""
+        self.services.add_service(service_obj, service_class)
+        CoreListener.send('service_registered', service=service_obj.name.get())
+
+    def get_public_services(self):
+        """Obtain a list of service actors whose API is publicly exported"""
+        return self.services.public_services_by_name
+
+    def get_public_service_classes(self):
+        """Obtain a list of service classes whose API is publicly exported"""
+        return self.services.public_classes_by_name
 
 
 class Backends(list):
@@ -122,7 +152,6 @@ class Backends(list):
         self.with_playlists = collections.OrderedDict()
 
         backends_by_scheme = {}
-        name = lambda b: b.actor_ref.actor_class.__name__
 
         for b in backends:
             has_library = b.has_library().get()
@@ -134,7 +163,7 @@ class Backends(list):
                 assert scheme not in backends_by_scheme, (
                     'Cannot add URI scheme %s for %s, '
                     'it is already handled by %s'
-                ) % (scheme, name(b), name(backends_by_scheme[scheme]))
+                ) % (scheme, actor_name(b), actor_name(backends_by_scheme[scheme]))
                 backends_by_scheme[scheme] = b
 
                 if has_library:
@@ -153,14 +182,24 @@ class Services(list):
 
         self.services_by_name = {}
         self.classes_by_name = {}
-        name = lambda b: b.actor_ref.actor_class.__name__
+        # Public services will have their full APIs exported to HTTP/JSON RPC -
+        # this will be a subset of the above dictionaries
+        self.public_services_by_name = {}
+        self.public_classes_by_name = {}
 
         idx = 0
         for s in services:
-            assert s.name.get() not in self.services_by_name, (
-                'Cannot add service name %s for %s, '
-                'it is already taken by %s'
-            ) % (s.name.get(), name(s), name(self.services_by_name[s.name.get()]))
-            self.services_by_name[s.name.get()] = s
-            self.classes_by_name[s.name.get()] = service_classes[idx]
+            self.add_service(s, service_classes[idx])
             idx += 1
+
+    def add_service(self, s, service_class):
+        logger.info('Adding service %s-%s', s, service_class)
+        assert s.name.get() not in self.services_by_name, (
+            'Cannot add service name %s for %s, '
+            'it is already taken by %s'
+        ) % (s.name.get(), actor_name(s), actor_name(self.services_by_name[s.name.get()]))
+        self.services_by_name[s.name.get()] = s
+        self.classes_by_name[s.name.get()] = service_class
+        if (s.public.get()):
+            self.public_services_by_name[s.name.get()] = s
+            self.public_classes_by_name[s.name.get()] = service_class

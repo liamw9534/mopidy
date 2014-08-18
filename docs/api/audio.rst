@@ -35,3 +35,10 @@ Audio scanner
 
 .. autoclass:: mopidy.audio.scan.Scanner
     :members:
+
+    
+Audio output
+============
+
+.. autoclass:: mopidy.audio.AudioOutput
+    :members:

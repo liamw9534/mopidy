@@ -26,6 +26,10 @@ class HttpServerTest(tornado.testing.AsyncHTTPTestCase):
         core = mock.Mock()
         core.get_version = mock.MagicMock(name='get_version')
         core.get_version.return_value = mopidy.__version__
+        core.get_public_services = mock.MagicMock(name='get_public_services')
+        core.get_public_services.get.return_value = []
+        core.get_public_service_classes = mock.MagicMock(name='get_public_service_classes')
+        core.get_public_service_classes.get.return_value = []
 
         testapps = [dict(name='testapp')]
         teststatics = [dict(name='teststatic')]

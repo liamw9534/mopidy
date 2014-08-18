@@ -75,6 +75,9 @@ class HttpFrontend(pykka.ThreadingActor, CoreListener, ServiceListener):
         self.server.stop()
 
     def on_event(self, name, **data):
+        # Reset app handlers in case any new services were registered since we started
+        if (name == 'startup_complete' or name == 'service_registered'):
+            self.server.reset_app_handlers()
         on_event(name, **data)
 
 
@@ -113,6 +116,10 @@ class HttpServer(threading.Thread):
         logger.debug('Stopping HTTP server')
         tornado.ioloop.IOLoop.instance().add_callback(
             tornado.ioloop.IOLoop.instance().stop)
+
+    def reset_app_handlers(self):
+        # This will also replace existing app handlers
+        self.app.add_handlers(".*$", self._get_app_request_handlers())
 
     def _get_request_handlers(self):
         request_handlers = []
