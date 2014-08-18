@@ -36,27 +36,35 @@ def make_mopidy_app_factory(apps, statics):
 
 
 def make_jsonrpc_wrapper(core_actor):
-    inspector = jsonrpc.JsonRpcInspector(
-        objects={
-            'core.get_uri_schemes': core.Core.get_uri_schemes,
-            'core.get_version': core.Core.get_version,
-            'core.library': core.LibraryController,
-            'core.playback': core.PlaybackController,
-            'core.playlists': core.PlaylistsController,
-            'core.tracklist': core.TracklistController,
-            'core.device': core.DeviceController,
-        })
+    objects={
+             'core.get_uri_schemes': core.Core.get_uri_schemes,
+             'core.get_version': core.Core.get_version,
+             'core.library': core.LibraryController,
+             'core.playback': core.PlaybackController,
+             'core.playlists': core.PlaylistsController,
+             'core.tracklist': core.TracklistController,
+             'core.service': core.ServiceController,
+             }
+    services = core_actor.get_service_classes().get()
+    for t in services.keys():
+        objects[t] = services[t]
+
+    inspector = jsonrpc.JsonRpcInspector(objects)
+    objects={
+             'core.describe': inspector.describe,
+             'core.get_uri_schemes': core_actor.get_uri_schemes,
+             'core.get_version': core_actor.get_version,
+             'core.library': core_actor.library,
+             'core.playback': core_actor.playback,
+             'core.playlists': core_actor.playlists,
+             'core.tracklist': core_actor.tracklist,
+             'core.service': core_actor.service,
+             }
+    services = core_actor.get_services().get()
+    for t in services.keys():
+        objects[t] = services[t]
     return jsonrpc.JsonRpcWrapper(
-        objects={
-            'core.describe': inspector.describe,
-            'core.get_uri_schemes': core_actor.get_uri_schemes,
-            'core.get_version': core_actor.get_version,
-            'core.library': core_actor.library,
-            'core.playback': core_actor.playback,
-            'core.playlists': core_actor.playlists,
-            'core.tracklist': core_actor.tracklist,
-            'core.device': core_actor.device,
-        },
+        objects,
         decoders=[models.model_json_decoder],
         encoders=[models.ModelJSONEncoder]
     )

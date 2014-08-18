@@ -1,14 +1,10 @@
 from __future__ import unicode_literals
 
-from mopidy import listener
+from mopidy.service import ServiceListener
+from mopidy.service import Service
 
 
-class DeviceManager(object):
-    #: List of strings representing the device type identifier.
-    #: This should be set by the device manager itself and normally
-    #: represents the subsystem or technology being managed.
-    #: For example, 'bluetooth', 'alsa', 'mopidy'.
-    device_types = []
+class DeviceManager(Service):
 
     def get_devices(self):
         """
@@ -19,21 +15,6 @@ class DeviceManager(object):
 
         :return: a list of `:class:mopidy.models.Device` objects
         :rtype: list
-        """
-        pass
-
-    def enable(self):
-        """
-        Enable the device manager.  Starts enabled by default, so should
-        be called following a disable.  Events may be emitted following
-        an enable.
-        """
-        pass
-
-    def disable(self):
-        """
-        Disable the device manager.  No events should be emitted following
-        a disable.
         """
         pass
 
@@ -103,7 +84,7 @@ class DeviceManager(object):
         """
         pass
 
-    def set_property(self, device, name, value):
+    def set_device_property(self, device, name, value):
         """
         Set a device's property.  For device's that have
         implementation-specific configuration settings, these may be exposed
@@ -118,7 +99,7 @@ class DeviceManager(object):
         """
         pass
 
-    def get_property(self, device, name=None):
+    def get_device_property(self, device, name=None):
         """
         Get a device's property.  For device's that have
         implementation-specific configuration settings, these may be exposed
@@ -133,7 +114,7 @@ class DeviceManager(object):
         """
         pass
 
-    def has_property(self, device, name):
+    def has_device_property(self, device, name):
         """
         Check if a device has a particular property name.  For device's that have
         implementation-specific configuration settings, these may be exposed
@@ -149,7 +130,7 @@ class DeviceManager(object):
         pass
 
 
-class DeviceListener(listener.Listener):
+class DeviceListener(ServiceListener):
     """
     Marker interface for recipients of events sent by device manager actors.
     
@@ -161,11 +142,6 @@ class DeviceListener(listener.Listener):
 
     Normally, only the Core actor should mix in this class.
     """
-
-    @staticmethod
-    def send(event, **kwargs):
-        """Helper to allow calling of device manager listener events"""
-        listener.send_async(DeviceListener, event, **kwargs)
 
     def device_found(self, device):
         """

@@ -8,9 +8,8 @@ import logging
 import pykka
 
 from mopidy import audio, backend
-from mopidy.device import DeviceListener
 from mopidy.audio import PlaybackState
-from mopidy.core.device import DeviceController
+from mopidy.core.service import ServiceController
 from mopidy.core.library import LibraryController
 from mopidy.core.listener import CoreListener
 from mopidy.core.playback import PlaybackController
@@ -21,8 +20,7 @@ from mopidy.utils import versioning
 logger = logging.getLogger(__name__)
 
 
-class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
-           DeviceListener):
+class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener):
     library = None
     """The library controller. An instance of
     :class:`mopidy.core.LibraryController`."""
@@ -39,18 +37,18 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
     """The tracklist controller. An instance of
     :class:`mopidy.core.TracklistController`."""
 
-    device = None
-    """The device controller. An instance of
-    :class:`mopidy.core.DeviceController`."""
+    service = None
+    """The service controller. An instance of
+    :class:`mopidy.core.ServiceController`."""
 
-    def __init__(self, audio=None, backends=None, device_managers=None):
+    def __init__(self, audio=None, backends=None, services=None, service_classes=None):
         super(Core, self).__init__()
 
         self.backends = Backends(backends)
 
-        self.device_managers = Devices(device_managers)
+        self.services = Services(services, service_classes)
 
-        self.device = DeviceController(device_managers=self.device_managers, core=self)
+        self.service = ServiceController(services=self.services, core=self)
 
         self.library = LibraryController(backends=self.backends, core=self)
 
@@ -96,49 +94,11 @@ class Core(pykka.ThreadingActor, audio.AudioListener, backend.BackendListener,
         # Forward event from backend to frontends
         CoreListener.send('playlists_loaded')
 
-    def device_found(self, device):
-        # Forward event from device to other extensions
-        logger.info('Core relaying device_found')
-        CoreListener.send('device_found', device=device)
+    def get_services(self):
+        return self.services.services_by_name
 
-    def device_disappeared(self, device):
-        # Forward event from device to other extensions
-        logger.info('Core relaying device_disappeared')
-        CoreListener.send('device_disappeared', device=device)
-
-    def device_connected(self, device):
-        # Forward event from device to other extensions
-        logger.info('Core relaying device_connected')
-        CoreListener.send('device_connected', device=device)
-
-    def device_disconnected(self, device):
-        # Forward event from device to other extensions
-        logger.info('Core relaying device_disconnected')
-        CoreListener.send('device_disconnected', device=device)
-
-    def device_created(self, device):
-        # Forward event from device to other extensions
-        CoreListener.send('device_created', device=device)
-
-    def device_removed(self, device):
-        # Forward event from device to other extensions
-        CoreListener.send('device_removed', device=device)
-
-    def device_property_changed(self, device, property_dict):
-        # Forward event from device to other extensions
-        logger.info('Core relaying device_property_changed')
-        CoreListener.send('device_property_changed', device=device,
-                          property_dict=property_dict)
-
-    def device_pin_code_requested(self, device, pin_code):
-        # Forward event from device to other extensions
-        CoreListener.send('device_pin_code_requested', device=device,
-                          pin_code=pin_code)
-
-    def device_pass_key_confirmation(self, device, pass_key):
-        # Forward event from device to other extensions
-        CoreListener.send('device_pass_key_confirmation', device=device,
-                          pass_key=pass_key)
+    def get_service_classes(self):
+        return self.services.classes_by_name
 
 
 class Backends(list):
@@ -176,17 +136,20 @@ class Backends(list):
                     self.with_playlists[scheme] = b
 
 
-class Devices(list):
-    def __init__(self, device_managers):
-        super(Devices, self).__init__(device_managers)
+class Services(list):
+    def __init__(self, services, service_classes):
+        super(Services, self).__init__(services)
 
-        self.devices_by_type = {}
+        self.services_by_name = {}
+        self.classes_by_name = {}
         name = lambda b: b.actor_ref.actor_class.__name__
 
-        for d in device_managers:
-            for device_type in d.device_types.get():
-                assert device_type not in self.devices_by_type, (
-                    'Cannot add device type %s for %s, '
-                    'it is already handled by %s'
-                ) % (device_type, name(d), name(self.devices_by_type[device_type]))
-                self.devices_by_type[device_type] = d
+        idx = 0
+        for s in services:
+            assert s.name.get() not in self.services_by_name, (
+                'Cannot add service name %s for %s, '
+                'it is already taken by %s'
+            ) % (s.name.get(), name(s), name(self.services_by_name[s.name.get()]))
+            self.services_by_name[s.name.get()] = s
+            self.classes_by_name[s.name.get()] = service_classes[idx]
+            idx += 1
