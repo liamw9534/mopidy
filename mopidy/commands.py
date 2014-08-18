@@ -264,12 +264,14 @@ class RootCommand(Command):
         mixer_class = self.get_mixer_class(config, args.registry['mixer'])
         backend_classes = args.registry['backend']
         frontend_classes = args.registry['frontend']
+        service_classes = args.registry['service']
 
         try:
             mixer = self.start_mixer(config, mixer_class)
             audio = self.start_audio(config, mixer)
             backends = self.start_backends(config, backend_classes, audio)
-            core = self.start_core(mixer, backends)
+            services = self.start_services(config, service_classes, audio)
+            core = self.start_core(mixer, backends, services, service_classes)
             self.start_frontends(config, frontend_classes, core)
             loop.run()
         except (exceptions.BackendError,
@@ -282,6 +284,7 @@ class RootCommand(Command):
             loop.quit()
             self.stop_frontends(frontend_classes)
             self.stop_core()
+            self.stop_services(service_classes)
             self.stop_backends(backend_classes)
             self.stop_audio()
             self.stop_mixer(mixer_class)
@@ -345,9 +348,22 @@ class RootCommand(Command):
 
         return backends
 
-    def start_core(self, mixer, backends):
+    def start_services(self, config, service_classes, audio):
+        logger.info(
+            'Starting Mopidy services: %s',
+            ', '.join(b.__name__ for b in service_classes) or 'none')
+
+        services = []
+        for service_class in service_classes:
+            service = service_class.start(config=config, audio=audio).proxy()
+            services.append(service)
+
+        return services
+
+    def start_core(self, mixer, backends, services, service_classes):
         logger.info('Starting Mopidy core')
-        return Core.start(mixer=mixer, backends=backends).proxy()
+        return Core.start(mixer=mixer, backends=backends,
+                          services=services, service_classes=service_classes).proxy()
 
     def start_frontends(self, config, frontend_classes, core):
         logger.info(
@@ -371,6 +387,11 @@ class RootCommand(Command):
     def stop_core(self):
         logger.info('Stopping Mopidy core')
         process.stop_actors_by_class(Core)
+
+    def stop_services(self, service_classes):
+        logger.info('Stopping Mopidy services')
+        for service_class in service_classes:
+            process.stop_actors_by_class(service_class)
 
     def stop_backends(self, backend_classes):
         logger.info('Stopping Mopidy backends')

@@ -7,6 +7,7 @@ import pykka
 
 from mopidy import audio, backend, mixer
 from mopidy.audio import PlaybackState
+from mopidy.core.service import ServiceController
 from mopidy.core.library import LibraryController
 from mopidy.core.listener import CoreListener
 from mopidy.core.playback import PlaybackController
@@ -35,10 +36,19 @@ class Core(
     """The tracklist controller. An instance of
     :class:`mopidy.core.TracklistController`."""
 
-    def __init__(self, mixer=None, backends=None):
+    service = None
+    """The service controller. An instance of
+    :class:`mopidy.core.ServiceController`."""
+
+    def __init__(self, mixer=None, backends=None, services=None, service_classes=None):
+
         super(Core, self).__init__()
 
         self.backends = Backends(backends)
+
+        self.services = Services(services, service_classes)
+
+        self.service = ServiceController(services=self.services, core=self)
 
         self.library = LibraryController(backends=self.backends, core=self)
 
@@ -95,6 +105,12 @@ class Core(
         # Forward event from mixer to frontends
         CoreListener.send('mute_changed', mute=mute)
 
+    def get_services(self):
+        return self.services.services_by_name
+
+    def get_service_classes(self):
+        return self.services.classes_by_name
+
 
 class Backends(list):
     def __init__(self, backends):
@@ -129,3 +145,22 @@ class Backends(list):
                     self.with_playback[scheme] = b
                 if has_playlists:
                     self.with_playlists[scheme] = b
+
+
+class Services(list):
+    def __init__(self, services, service_classes):
+        super(Services, self).__init__(services)
+
+        self.services_by_name = {}
+        self.classes_by_name = {}
+        name = lambda b: b.actor_ref.actor_class.__name__
+
+        idx = 0
+        for s in services:
+            assert s.name.get() not in self.services_by_name, (
+                'Cannot add service name %s for %s, '
+                'it is already taken by %s'
+            ) % (s.name.get(), name(s), name(self.services_by_name[s.name.get()]))
+            self.services_by_name[s.name.get()] = s
+            self.classes_by_name[s.name.get()] = service_classes[idx]
+            idx += 1

@@ -15,6 +15,7 @@ import tornado.websocket
 
 from mopidy import exceptions, models, zeroconf
 from mopidy.core import CoreListener
+from mopidy.service import ServiceListener
 from mopidy.http import handlers
 from mopidy.utils import encoding, formatting, network
 
@@ -22,7 +23,7 @@ from mopidy.utils import encoding, formatting, network
 logger = logging.getLogger(__name__)
 
 
-class HttpFrontend(pykka.ThreadingActor, CoreListener):
+class HttpFrontend(pykka.ThreadingActor, CoreListener, ServiceListener):
     apps = []
     statics = []
 
