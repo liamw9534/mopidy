@@ -29,7 +29,7 @@ class ServiceController(object):
         :return: service state
         :rtype: string, see :class:`service.ServiceState` for possible values
         """
-        return self._service_obj(service).get_service_state().get()
+        return self._get_service_obj(service).get_service_state().get()
 
     def enable(self, service):
         """
@@ -39,7 +39,7 @@ class ServiceController(object):
         :param service: the service name to address
         :type service: string
         """
-        self.services.services_by_name.get(service).enable()
+        self._get_service_obj(service).enable()
 
     def disable(self, service):
         """
@@ -49,7 +49,7 @@ class ServiceController(object):
         :param service: the service name to address
         :type service: string
         """
-        self.services.services_by_name.get(service).disable()
+        self._get_service_obj(service).disable()
 
     def set_property(self, service, name, value):
         """
@@ -64,7 +64,7 @@ class ServiceController(object):
         :param value: the value of the property to set
         :type value: implementation-specific to service
         """
-        self._service_obj(service).set_property(name, value)
+        self._get_service_obj(service).set_property(name, value)
 
     def clear_property(self, service, name):
         """
@@ -76,7 +76,7 @@ class ServiceController(object):
         :param name: the property name to set
         :type name: string
         """
-        self._service_obj(service).clear_property(name)
+        self._get_service_obj(service).clear_property(name)
 
     def get_property(self, service, name=None):
         """
@@ -90,7 +90,7 @@ class ServiceController(object):
         :return None, property value or all property values where name is None
         :rtype: dictionary of all properties or implementation-specific property value
         """
-        return self._service_obj(service).get_property(name).get()
+        return self._get_service_obj(service).get_property(name).get()
 
     def has_property(self, service, name):
         """
@@ -103,4 +103,4 @@ class ServiceController(object):
         :return True if the property exists, False otherwise
         :rtype: boolean
         """
-        return self._service_obj(service).has_property(name).get()
+        return self._get_service_obj(service).has_property(name).get()
