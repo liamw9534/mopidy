@@ -7,6 +7,11 @@ import traceback
 import pykka
 
 
+def private_method(f):
+    f.private_method = True
+    return f
+
+
 class JsonRpcWrapper(object):
     """
     Wrap objects and make them accessible through JSON-RPC 2.0 messaging.
@@ -337,6 +342,8 @@ class JsonRpcInspector(object):
             if name.startswith('_'):
                 continue
             if not inspect.isroutine(value):
+                continue
+            if (hasattr(value, 'private_method')):
                 continue
             method = self._describe_method(value)
             if method:
