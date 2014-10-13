@@ -359,6 +359,7 @@ class LineProtocol(pykka.ThreadingActor):
 
         self.connection.disable_timeout()
         self.recv_buffer += message['received']
+        logger.info('Recv buffer: %s', self.recv_buffer)
 
         for line in self.parse_lines():
             line = self.decode(line)

@@ -27,7 +27,7 @@ _audio_schema = ConfigSchema('audio')
 _audio_schema['mixer'] = String()
 _audio_schema['mixer_track'] = Deprecated()
 _audio_schema['mixer_volume'] = Integer(optional=True, minimum=0, maximum=100)
-_audio_schema['output'] = String()
+_audio_schema['output'] = String(optional=True)
 _audio_schema['visualizer'] = String(optional=True)
 
 _proxy_schema = ConfigSchema('proxy')

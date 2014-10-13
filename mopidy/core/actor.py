@@ -45,7 +45,7 @@ class Core(
     """The service controller. An instance of
     :class:`mopidy.core.ServiceController`."""
 
-    def __init__(self, mixer=None, backends=None, backend_classes=[]):
+    def __init__(self, audio=None, mixer=None, backends=None, backend_classes=[]):
 
         super(Core, self).__init__()
 
@@ -140,6 +140,13 @@ class Core(
     def get_public_service_classes(self):
         """Obtain a list of service classes whose API is publicly exported"""
         return self.services.public_classes_by_name
+
+    def add_audio_sink(self, ident, sink_obj):
+        """Add an audio sink object dynamically to the running audio pipeline"""
+        self.audio.add_sink(ident, sink_obj)
+
+    def remove_audio_sink(self, ident):
+        self.audio.remove_sink(ident)
 
 
 class Backends(list):

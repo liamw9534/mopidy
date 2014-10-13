@@ -269,7 +269,7 @@ class RootCommand(Command):
             mixer = self.start_mixer(config, mixer_class)
             audio = self.start_audio(config, mixer)
             backends = self.start_backends(config, backend_classes, audio)
-            core = self.start_core(mixer, backends, backend_classes)
+            core = self.start_core(audio, mixer, backends, backend_classes)
             self.start_frontends(config, frontend_classes, core)
             core.notify_startup_complete()
             loop.run()
@@ -346,9 +346,9 @@ class RootCommand(Command):
 
         return backends
 
-    def start_core(self, mixer, backends, backend_classes):
+    def start_core(self, audio, mixer, backends, backend_classes):
         logger.info('Starting Mopidy core')
-        return Core.start(mixer=mixer, backends=backends,
+        return Core.start(audio=audio, mixer=mixer, backends=backends,
                           backend_classes=backend_classes).proxy()
 
     def start_frontends(self, config, frontend_classes, core):
