@@ -2,8 +2,6 @@ from __future__ import unicode_literals
 
 import logging
 
-import gobject
-
 import pygst
 pygst.require('0.10')
 import gst  # noqa
@@ -52,6 +50,13 @@ class AudioOutput(gst.Bin):
         :param sink_obj: a gstreamer object which implements the audio sink
         :type gst.Bin or derivative of gst.BaseSink
         """
+        
+        if (ident in self._bins.keys()):
+            raise Exception('Sink object ident = ' + ident + ' is already registered')
+
+        # Remove fakesink if it is inside the bin already
+        remove_fakesink = '_fakesink' in self._bins.keys()
+
         # If Safely add the sink object into the tee gst.Bin object
         self._bins[ident] = {}
         # If the pipeline is running, we must block the sink pad
@@ -74,6 +79,10 @@ class AudioOutput(gst.Bin):
         self._bins[ident]['sink_obj'] = sink_obj
         self._bins[ident]['srcpad'] = srcpad
 
+        # Remove fakesink if it was already inside
+        if (remove_fakesink):
+            self.remove_sink('_fakesink')
+
     def remove_sink(self, ident):
         """
         Remove an existing sink from the tee bin by its unique
@@ -84,8 +93,14 @@ class AudioOutput(gst.Bin):
         :type ident: opaque any type which may be referenced in a
             python dictionary
         """
-        if (ident in self._bins):
+        # If this is the last bin, we should add fakesink back first
+        if (len(self._bins.keys()) == 1):
+            self.add_sink('_fakesink', FakeAudioSink())
+
+        if (ident in self._bins.keys()):
             sink = self._bins.pop(ident)
+            if (sink is None):
+                raise Exception('Unrecognized sink object ident = ' + ident)
             sink_obj = sink['sink_obj']
             srcpad = sink['srcpad']
             # Safely remove the element from the tee gst.Bin
@@ -101,8 +116,10 @@ class AudioOutput(gst.Bin):
 class FakeAudioSink(gst.Bin):
     def __init__(self):
         super(FakeAudioSink, self).__init__()
-        fakesink = gst.element_factory_make('fakesink')
         queue = gst.element_factory_make('queue')
+        fakesink = gst.element_factory_make('fakesink')
+        fakesink.set_property('async', True)
+        fakesink.set_property('sync', True)
         self.add_many(queue, fakesink)
         gst.element_link_many(queue, fakesink)
         pad = queue.get_pad('sink')
